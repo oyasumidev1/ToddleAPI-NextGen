@@ -86,16 +86,6 @@ Revert a submission back to draft.
 ### `client.get_behaviour_incidents(first=20)`
 Fetch behaviour incident feed data.
 
-## Demo
-
-A small demo script is included:
-
-```bash
-python demo.py
-```
-
-It prints the recommended flow and usage examples without making live network calls.
-
 ## Compatibility
 
 Legacy-style access is available through `nextgen.compat` if needed for old naming patterns.
