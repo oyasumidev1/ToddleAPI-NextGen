@@ -1,6 +1,6 @@
 # ToddleAPI NextGen
 
-A cleaner refactor of ToddleAPI focused on maintainability and speed.
+A cleaner refactor of ToddleAPI focused on maintainability, speed, and easier extension.
 
 ## Highlights
 
@@ -9,7 +9,14 @@ A cleaner refactor of ToddleAPI focused on maintainability and speed.
 - Less repeated setup code
 - Cleaner config and model separation
 - GraphQL query constants extracted
-- Compatibility layer for legacy style access
+- Compatibility layer for legacy-style access
+- Attendance summary helper included
+
+## Installation
+
+```bash
+pip install requests
+```
 
 ## Structure
 
@@ -19,79 +26,77 @@ A cleaner refactor of ToddleAPI focused on maintainability and speed.
 - `nextgen/client.py` - main client implementation
 - `nextgen/compat.py` - legacy compatibility helpers
 - `nextgen/__init__.py` - public exports
-- `demo.py` - runnable demo of the intended workflow
-
-## Installation
-
-The refactor uses `requests`.
-
-```bash
-pip install requests
-```
-
-If you want to use the package directly from this folder, run Python from `ToddleAPI NextGen` so the `nextgen` package can be imported.
+- `demo.py` - runnable usage demo
 
 ## Quick Start
 
 ```python
-from nextgen import ToddleClient, FileTypes
+from nextgen import ToddleClient
 
 client = ToddleClient.from_class_code("YOUR_CLASS_CODE")
 courses = client.get_course_ids()
+tasks = client.fetch_toddle_tasks(courses, "upcoming")
 ```
 
-## Common Workflow
+## Attendance Percentages
+
+The new `get_attendance_percentages()` helper returns a structured response based on `categorySummary`.
+
+Example output:
+
+```python
+{
+    "success": True,
+    "student_id": "233465177817817775",
+    "overall_presence": {
+        "present": 97.32,
+        "absent": 2.68,
+        "present_count": 943,
+        "absent_count": 26,
+        "total_count": 969,
+    },
+    "category_percentages": {
+        "Present": 94.63,
+        "Late": 1.75,
+        "Unexcused": 0.41,
+        "Excused": 3.2,
+    },
+}
+```
+
+## Demo
+
+Run the demo script to see the intended workflow:
+
+```bash
+python demo.py
+```
+
+## Example Usage
 
 ```python
 from nextgen import ToddleClient
 
-with ToddleClient.from_class_code("YOUR_CLASS_CODE") as client:
-    courses = client.get_course_ids()
-    tasks = client.fetch_toddle_tasks(courses, "upcoming")
-    print(tasks)
+client = ToddleClient.from_class_code("YOUR_CLASS_CODE")
+attendance = client.get_attendance_percentages(
+    filters={
+        "startDate": "2025-08-11",
+        "endDate": "2026-04-29",
+        "isPeriodByAttendance": True,
+        "academicYearIds": "221002766829555665",
+        "curriculumProgramIds": "233817334190516058",
+    },
+    overall_filters={
+        "startDate": "2025-08-11",
+        "endDate": "2026-04-29",
+        "isPeriodByAttendance": True,
+        "academicYearIds": "221002766829555665",
+        "curriculumProgramIds": "233817334190516058",
+    },
+)
+print(attendance["category_percentages"])
 ```
-
-## API Overview
-
-### `ToddleClient.from_class_code(class_code)`
-Create a logged-in client from a Toddle class code.
-
-### `client.get_course_ids()`
-Get the current student course IDs.
-
-### `client.fetch_toddle_tasks(course_ids, status)`
-Fetch homework/task data.
-
-### `client.get_submission_id(assignment_id)`
-Get the submission ID for a student assignment.
-
-### `client.get_assignment_details(assignment_id)`
-Fetch assignment details.
-
-### `client.get_attachments(assignment_id)`
-List attachments for a submission.
-
-### `client.upload_file_to_assignment(...)`
-Upload an attachment to a submission.
-
-### `client.delete_attachments(attachment_ids)`
-Delete attachment groups.
-
-### `client.submit_assignment(submission_id)`
-Submit a draft assignment.
-
-### `client.unsubmit_assignment(submission_id)`
-Revert a submission back to draft.
-
-### `client.get_behaviour_incidents(first=20)`
-Fetch behaviour incident feed data.
 
 ## Compatibility
 
-Legacy-style access is available through `nextgen.compat` if needed for old naming patterns.
-
-## Notes
-
-- This package is still a refactor, so some returned structures are intentionally lightweight.
-- The client reuses one `requests.Session` for better performance.
-- GraphQL query strings are kept in one place for easier maintenance.
+For older code, `ToddleAPI` is still available through the compatibility layer.

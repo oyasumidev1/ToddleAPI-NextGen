@@ -10,6 +10,7 @@ from .config import CONFIG
 from .models import FileTypes
 from .queries import (
     GET_ASSIGNMENT_DETAILS_QUERY,
+    GET_ATTENDANCE_PERCENTAGES_QUERY,
     GET_BEHAVIOUR_INCIDENTS_QUERY,
     GET_STUDENT_ASSIGNMENT_QUERY,
     GET_STUDENT_TASKS_QUERY,
@@ -307,3 +308,45 @@ class ToddleClient:
                 "created_at": node.get("createdAt"),
             })
         return {"success": True, "total_count": data.get("data", {}).get("node", {}).get("behaviourIncidentFeed", {}).get("totalCount", 0), "incidents": incidents}
+
+    def get_attendance_percentages(self, student_id: Optional[str] = None, filters: Optional[Dict[str, Any]] = None, overall_filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        student_id = student_id or self.user_id
+        if not self.token or not student_id:
+            raise ValueError("Token and student_id are required")
+
+        variables = {
+            "studentId": student_id,
+            "filters": filters or {},
+            "overAllPresenceFilter": overall_filters or filters or {},
+        }
+        data = self._graphql(
+            "getStudentAttendanceStatisticsV2",
+            variables,
+            GET_ATTENDANCE_PERCENTAGES_QUERY,
+            {"x-tod-lsn": "2122/C239280"},
+        )
+
+        attendance = data.get("data", {}).get("node", {}).get("attendanceV2", {})
+        categories = attendance.get("categorySummary", {}).get("percentageItems", [])
+        category_percentages = {}
+        for item in categories:
+            category = item.get("category", {})
+            label = category.get("label")
+            percentage = item.get("percentage")
+            if label is not None and percentage is not None:
+                category_percentages[label] = percentage
+
+        overall_presence = attendance.get("overallPresence", {}).get("presenceOverview", {})
+
+        return {
+            "success": True,
+            "student_id": student_id,
+            "overall_presence": {
+                "present": overall_presence.get("presencePercentage"),
+                "absent": overall_presence.get("absencePercentage"),
+                "present_count": overall_presence.get("presenceNumber"),
+                "absent_count": overall_presence.get("absenceNumber"),
+                "total_count": overall_presence.get("totalCount"),
+            },
+            "category_percentages": category_percentages,
+        }
